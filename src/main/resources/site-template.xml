@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- One node. The @...@ placeholders are filled in by IracCleanupStopsRepro. -->
+<infinispan xmlns="urn:infinispan:config:15.0" xmlns:ispn="urn:infinispan:config:15.0">
+  <jgroups>
+    <!-- Local cluster of the site: stock "tcp" stack, loopback only, static discovery. -->
+    <stack name="local" extends="tcp">
+      <TCP xmlns="urn:org:jgroups" bind_addr="127.0.0.1" bind_port="@LOCAL_PORT@" port_range="0" ispn:stack.combine="COMBINE"/>
+      <TCPPING xmlns="urn:org:jgroups" initial_hosts="@LOCAL_HOSTS@" port_range="0"
+               ispn:stack.combine="REPLACE" ispn:stack.position="MPING"/>
+    </stack>
+    <!-- Bridge between the site masters. -->
+    <stack name="bridge" extends="tcp">
+      <TCP xmlns="urn:org:jgroups" bind_addr="127.0.0.1" bind_port="@BRIDGE_PORT@" port_range="0" ispn:stack.combine="COMBINE"/>
+      <TCPPING xmlns="urn:org:jgroups" initial_hosts="127.0.0.1[7900],127.0.0.1[7901],127.0.0.1[7902],127.0.0.1[7903],127.0.0.1[7910],127.0.0.1[7920]"
+               port_range="0" ispn:stack.combine="REPLACE" ispn:stack.position="MPING"/>
+    </stack>
+    <stack name="xsite" extends="local">
+      <relay.RELAY2 xmlns="urn:org:jgroups" site="@SITE@" max_site_masters="1"/>
+      <remote-sites default-stack="bridge">
+        <remote-site name="A"/>
+        <remote-site name="B"/>
+        <remote-site name="C"/>
+      </remote-sites>
+    </stack>
+  </jgroups>
+
+  <cache-container name="@SITE@" statistics="true">
+    <transport cluster="site-@SITE@" stack="xsite" node-name="@NODE@"/>
+    <!-- remote-timeout and max-cleanup-delay are shortened so the effect shows within a minute.
+         The defaults (15 s, 30 s) behave the same, only slower. -->
+    <distributed-cache name="sessions" mode="ASYNC" owners="3" statistics="true" remote-timeout="@REMOTE_TIMEOUT@">
+      <backups max-cleanup-delay="@CLEANUP_DELAY@">
+@BACKUPS@
+      </backups>
+    </distributed-cache>
+  </cache-container>
+</infinispan>
