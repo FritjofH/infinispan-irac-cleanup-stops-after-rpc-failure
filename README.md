@@ -1,5 +1,7 @@
 # Infinispan IRAC tombstone cleanup stops for good after one failed RPC
 
+Reported upstream: https://github.com/infinispan/infinispan/issues/18385
+
 Reproducer for: one failed RPC in an IRAC tombstone cleanup round stops all later cleanup rounds for that
 cache on that node. Nothing is logged above TRACE. Stale IRAC keys and tombstones then grow without bound.
 
